@@ -12,6 +12,9 @@ CLAUDE.md
 *.out.xml
 *.output.xml
 
+# 卫星影像（体积过大，不上传）
+*.tif
+
 gitpage/*
 examples/tshub_env3d/env3d_images/*
 # C extensions

@@ -1,0 +1,98 @@
+'''
+@Author: WANG Maonan
+@Description: MaxPressure 最大压力算法
+对每个 phase 计算 pressure = incoming_waiting - outgoing_waiting，选择 pressure 最大的 phase。
+当当前相位超过最大绿灯步数时，强制排除当前相位，避免绿灯长期无法切换。
+'''
+from typing import Dict, Any, List
+from tsc_algos.traditional.base_traditional import BaseTraditionalAgent
+
+
+# 速度阈值，低于此速度视为排队等待
+SPEED_THRESHOLD = 1.0  # m/s
+
+
+class MaxPressureAgent(BaseTraditionalAgent):
+    """最大压力算法
+
+    对每个 phase:
+    1. 找到绑定到该 phase 的所有 incoming lane，统计排队车辆数
+    2. 找到绑定到该 phase 的所有 outgoing lane，统计排队车辆数
+    3. pressure = incoming_waiting - outgoing_waiting
+    选择 pressure 最大的 phase。
+    当当前相位持续绿灯步数超过 max_green_steps 时，强制切换到其余相位中压力最大的一个。
+
+    Args:
+        max_green_steps: 单个相位允许的最大连续绿灯决策步数，超过后强制切换
+    """
+
+    def __init__(self, max_green_steps: int = 12):
+        self.max_green_steps = max_green_steps
+        self.current_phase = 0
+        self.green_steps = 0  # 当前相位已持续的决策步数
+
+    def choose_action(
+        self,
+        lane_dynamic_features_seq: List[Dict[str, Any]],
+        static_lane_features: Dict[str, Any],
+    ) -> int:
+        lane_dynamic_features = lane_dynamic_features_seq[-1]
+
+        # 从 phase_binding 推断 num_phases
+        num_phases = 0
+        for features in static_lane_features.values():
+            pb = features.get('phase_binding', [])
+            if len(pb) > num_phases:
+                num_phases = len(pb)
+
+        if num_phases == 0:
+            return 0
+
+        # 计算每个 lane 的排队车辆数
+        lane_waiting = {}
+        for lane_id, cells in lane_dynamic_features.items():
+            waiting = 0
+            for cell in cells:
+                if cell['avg_speed'] < SPEED_THRESHOLD and cell['vehicle_count'] > 0:
+                    waiting += cell['vehicle_count']
+            lane_waiting[lane_id] = waiting
+
+        # 计算每个 phase 的 pressure
+        phase_pressure = [0.0] * num_phases
+
+        for phase_idx in range(num_phases):
+            incoming_waiting = 0
+            outgoing_waiting = 0
+
+            for lane_id, features in static_lane_features.items():
+                pb = features.get('phase_binding', [])
+                if phase_idx >= len(pb) or pb[phase_idx] != 1:
+                    continue
+
+                io_type = features['io_type']
+                w = lane_waiting.get(lane_id, 0)
+
+                if io_type[0] == 1:  # Incoming
+                    incoming_waiting += w
+                elif io_type[1] == 1:  # Outgoing
+                    outgoing_waiting += w
+
+            phase_pressure[phase_idx] = incoming_waiting - outgoing_waiting
+
+        # 超过最大绿灯步数时，强制排除当前相位，避免绿灯无法切换
+        if self.green_steps >= self.max_green_steps:
+            candidates = [i for i in range(num_phases) if i != self.current_phase]
+            if not candidates:
+                candidates = [(self.current_phase + 1) % num_phases]
+            best_phase = int(max(candidates, key=lambda i: phase_pressure[i]))
+        else:
+            best_phase = int(max(range(num_phases), key=lambda i: phase_pressure[i]))
+
+        # 更新内部状态
+        if best_phase == self.current_phase:
+            self.green_steps += 1
+        else:
+            self.current_phase = best_phase
+            self.green_steps = 1
+
+        return best_phase
