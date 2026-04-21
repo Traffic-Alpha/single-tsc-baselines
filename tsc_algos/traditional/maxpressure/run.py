@@ -1,7 +1,7 @@
 '''
 Author: WANG Maonan
 Date: 2026-04-21 10:35:14
-LastEditTime: 2026-04-21 11:12:18
+LastEditTime: 2026-04-21 12:52:54
 LastEditors: WANG Maonan
 Description: 运行 MaxPressure 获取仿真结果
 '''
@@ -29,6 +29,8 @@ if __name__ == '__main__':
                         help='环境名称，如 easy_low_density')
     parser.add_argument('--use_gui', action='store_true', default=True,
                         help='是否开启 GUI')
+    parser.add_argument('--min_green_steps', type=int, default=3,
+                        help='单个相位最小连续绿灯决策步数')
     parser.add_argument('--max_green_steps', type=int, default=12,
                         help='单个相位最大连续绿灯决策步数')
     args = parser.parse_args()
@@ -44,5 +46,5 @@ if __name__ == '__main__':
         trip_info=trip_info,
         fcd_output=fcd_output,
     )
-    agent = MaxPressureAgent(max_green_steps=args.max_green_steps)
+    agent = MaxPressureAgent(min_green_steps=args.min_green_steps, max_green_steps=args.max_green_steps)
     agent.run(env, num_episodes=1)

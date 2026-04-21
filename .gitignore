@@ -11,6 +11,8 @@ CLAUDE.md
 # sumo output
 *.out.xml
 *.output.xml
+tsc_algos/results/**/fcd_output.xml
+tsc_algos/results/**/trip_info.xml
 
 # 卫星影像（体积过大，不上传）
 *.tif
