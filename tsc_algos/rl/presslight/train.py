@@ -2,7 +2,7 @@
 @Author: WANG Maonan
 @Description: PressLight 训练脚本
 -> python train.py --junction Beijing_Beihuan --env_name normal_fluctuating_commuter --num_envs 20 --reward_scale 0.1 --vec_env subproc --history_len 5
-@LastEditTime: 2026-06-02 23:49:10
+@LastEditTime: 2026-06-02 23:54:05
 '''
 import sys
 import argparse
@@ -30,7 +30,7 @@ from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback,
 
 path_convert = get_abs_path(__file__)
 logger.remove()
-set_logger(path_convert('./'), file_log_level="WARNING")
+set_logger(path_convert('./'), file_log_level="WARNING", terminal_log_level="WARNING")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PressLight 训练')
@@ -62,9 +62,9 @@ if __name__ == '__main__':
 
     cfg = load_junction_config(args.junction, args.env_name)
 
-    log_path = path_convert('./log/')
-    model_path = path_convert('./models/')
-    tensorboard_path = path_convert('./tensorboard/')
+    log_path = path_convert(f'./log/{args.junction}_{args.env_name}/')
+    model_path = path_convert(f'./models/{args.junction}_{args.env_name}/')
+    tensorboard_path = path_convert(f'./tensorboard/{args.junction}_{args.env_name}/')
     for p in [log_path, model_path, tensorboard_path]:
         os.makedirs(p, exist_ok=True)
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     eval_params = dict(params)
     eval_params.update({
-        'log_file': path_convert('./eval_log/'),
+        'log_file': log_path,
         'trip_info': eval_trip_info,
         'fcd_output': eval_fcd_output,
     })
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=model_path,
-        log_path=path_convert('./eval/'),
+        log_path=log_path,
         eval_freq=max(args.eval_freq // args.num_envs, 1),
         n_eval_episodes=5,
         deterministic=True,
