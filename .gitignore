@@ -18,6 +18,9 @@ tsc_algos/results/**/trip_info.xml
 **/tensorboard/
 events.out.tfevents*
 
+# Model checkpoints
+tsc_algos/rl/**/models/**/*.zip
+
 # 卫星影像（体积过大，不上传）
 *.tif
 
