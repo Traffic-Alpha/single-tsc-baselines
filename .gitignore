@@ -14,6 +14,10 @@ CLAUDE.md
 tsc_algos/results/**/fcd_output.xml
 tsc_algos/results/**/trip_info.xml
 
+# TensorBoard logs
+**/tensorboard/
+events.out.tfevents*
+
 # 卫星影像（体积过大，不上传）
 *.tif
 
